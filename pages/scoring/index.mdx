@@ -1,0 +1,39 @@
+# How Scoring Works
+
+Every metric on SwingElo is derived from publicly available competition results — prelim callbacks, finals placements, and WSDC registry data. Nothing is subjective or manually assigned.
+
+## Data sources
+
+| Source | What it provides |
+|--------|-----------------|
+| EEPro | Competition results: prelim callbacks, finals placements, division entries |
+| scoring.dance | Supplemental competition results |
+| WSDC Registry | Official dancer points, levels, and competition history |
+| WSDC Calendar | Upcoming event dates and locations |
+
+## Core principles
+
+### Transparency
+Every formula is documented. If you see a number on SwingElo, you can understand exactly how it was calculated.
+
+### Level-appropriate scoring
+A novice and a champion have fundamentally different data available. Novices mostly have prelim callbacks. Champions have years of finals placements and WSDC points. Our scoring adapts to measure what's actually measurable at each level.
+
+### Time weighting
+Recent results matter more than old ones. All metrics use time decay:
+- Last 2 years: full weight
+- 3–4 years ago: 70% weight
+- 4–6 years ago: 40% weight
+- Older: 20% weight
+
+### No black boxes
+We don't use opaque machine learning models. Every metric is a weighted combination of clearly defined inputs.
+
+## The metrics
+
+| Metric | What it measures | Key page |
+|--------|-----------------|----------|
+| [Strength Score](/scoring/strength) | Overall competitive strength (0–100) | How strong are you relative to the field? |
+| [Odds to Finals](/scoring/odds) | Probability of making finals per event | What are your chances at Swing Crush vs MADjam? |
+| [Power Rankings](/scoring/power-rankings) | Top dancer rankings across the circuit | Who are the strongest active dancers? |
+| [Judge Quality](/scoring/judge-quality) | Judge talent identification ability | Which judges spot rising talent earliest? |

@@ -1,0 +1,51 @@
+# Prelim Callbacks
+
+Prelim callbacks are the most common competitive interaction in WCS — and for many dancers, especially at the novice level, they're the *only* scored interaction. Here's how they work and how we use them.
+
+## How callbacks work
+
+In a prelim round, each judge independently marks every competitor:
+
+| Mark | Meaning |
+|------|---------|
+| **Y** (Yes) | This dancer should advance |
+| **A** (Alternate) | This dancer is next in line if a "yes" drops out |
+| **N** (No) | This dancer should not advance |
+
+The event organizer sets a threshold — typically dancers need a certain number of "yes" votes to advance to the next round.
+
+## Why callback quality matters
+
+Until recently, most scoring systems treated callbacks as binary: you either advanced or you didn't. But there's a huge difference between:
+
+- Getting **4 out of 4** yes votes (every judge wants you in the next round)
+- Getting the **bare minimum** to squeak through
+
+SwingElo tracks the actual marks. Your **callback quality** is:
+
+```
+callback_quality = average(yes_votes / total_judges) across all your prelim entries
+```
+
+A score of 1.0 means unanimous yes votes from every judge in every prelim. A score of 0.5 means roughly half the judges voted for you on average.
+
+## Why this matters for novices
+
+76% of novice dancers never reach intermediate. For most novice competitors, prelims are the entire competitive experience — they never make a final. The callback quality metric ensures that their competitive performance is meaningfully tracked even without finals data.
+
+A novice with consistently strong callbacks (0.7+) is genuinely performing well, even if they haven't broken through to finals yet. The [strength score](/scoring/strength) weights callback quality at 30% for novice dancers.
+
+## Callback stats on your profile
+
+Your profile shows callback stats per skill level:
+
+```
+NOV Callbacks: 8/12 (67%)
+INT Callbacks: 3/5 (60%)
+```
+
+This means: at the novice level, you entered 12 prelim rounds and were promoted in 8 of them (67% callback rate).
+
+:::note
+These are callback counts, not WSDC points. Your WSDC registry points are a separate number shown elsewhere on your profile.
+:::

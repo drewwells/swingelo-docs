@@ -1,0 +1,47 @@
+# Odds to Finals
+
+The odds calculation estimates your chances of making finals at each event. It looks at two things: how strong a competitor you are, and how hard it historically is to make finals at that specific event.
+
+## The big picture
+
+Your odds at any event are a blend of two numbers:
+
+1. **How dancers like you have done** — Among dancers with a similar [strength score](/scoring/strength) to yours, what percentage made finals at this event in past years?
+2. **How hard the event is overall** — Out of everyone who entered this event in past years, what percentage made finals?
+
+Your individual strength matters more at higher levels. At the champion level, it's almost entirely about how good you are. At the novice level, the historical average plays a bigger role because there's more variance in outcomes.
+
+## How much does your strength matter?
+
+| Level | Leaders | Followers |
+|-------|---------|-----------|
+| Newcomer | 53% you, 47% average | 40% you, 60% average |
+| Novice | 45% you, 55% average | 40% you, 60% average |
+| Intermediate | 53% you, 47% average | 61% you, 39% average |
+| Advanced | 76% you, 24% average | 93% you, 7% average |
+| All-Star | 64% you, 36% average | 84% you, 16% average |
+| Champion | 70% you, 30% average | 100% you |
+
+For a champion follower, your odds are 100% based on your strength — the general average doesn't factor in at all. For a novice leader, it's roughly half and half.
+
+## How "dancers like you" works
+
+We group all historical entrants into 10 tiers based on their strength score (top 10%, next 10%, and so on). Then we look at how often dancers in each tier actually made finals.
+
+For example, if you're in the top 10% of strength at a given event and historically 65% of top-10% dancers made finals there, your "dancers like you" number is 65%.
+
+## How "how hard the event is" works
+
+This is straightforward: across all years the event has been held, what's the average ratio of finalists to total entrants?
+
+An event with 50 entrants and 6 finalists has a 12% base rate. An event with 20 entrants and 6 finalists has a 30% base rate. Bigger events are harder to make finals at.
+
+Recent years count a bit more than older years, since field sizes and competitiveness change over time.
+
+## Event renames
+
+Events sometimes change names. "Novice Invitational" became "H-Town Throw Down." Your odds use data from all years under both names — the history carries over.
+
+## Upcoming events
+
+Your odds page includes future events from the WSDC calendar, even if you haven't competed there yet. For those events, the calculation uses whatever historical data exists. If you've never competed at an event, your odds are based on the general average for that event rather than your personal history there.
