@@ -1,44 +1,161 @@
 # Judge Quality
 
-Which judges are best at spotting rising talent? The judge quality metric answers this by looking at a simple question: **when a judge says "yes" to a dancer in prelims, does that dancer go on to level up?**
+Which judges are best at spotting rising talent? The judge quality metric answers this by tracking a simple question: **when a judge says "yes" to a dancer in prelims, does that dancer go on to level up?**
 
-## How it works
+## What counts as "spotting talent"
 
-For each judge, we look at every prelim panel they've ever judged:
+A judge is credited with a correct talent identification when:
 
-1. Find every dancer they gave a **Yes** to
-2. Check if those dancers later moved up to a higher skill level (e.g., from Novice to Intermediate)
-3. Score the judge based on how well their "yes" votes predicted future advancement
+1. The judge gave a **Yes** (or Alternate) callback to a dancer at level L in year Y
+2. That dancer later appeared competing at a **higher level** L' in a future year
 
-A judge who consistently says "yes" to dancers who later level up is identifying talent before the rest of the field catches on.
+For example:
+- Judge gives "Yes" to a novice dancer in 2023
+- That dancer shows up competing at intermediate in 2024
+- That's a correct call — the judge identified someone who was about to advance
 
-## The score balances two things
+If the dancer never moves up, the callback was a false positive — the judge said "yes" to someone who didn't advance.
 
-A great talent-spotter needs to do both of these well:
+## The scoring framework
 
-- **Pick winners** — When they say "yes," that dancer actually goes on to advance. A judge who says "yes" to everyone would pick all the future advancers, but also a lot of dancers who never advance.
-- **Don't miss talent** — Among all the dancers who did advance, how many did this judge recognize? A judge who only says "yes" to one dancer per night might be very accurate, but they'd miss most of the talent in the room.
+Each judge's prelim callbacks are categorized into four outcomes:
 
-The score rewards judges who do *both* — accurately identifying talent without being too conservative or too generous.
+| | Dancer later advanced | Dancer did not advance |
+|---|---|---|
+| **Judge said Yes/Alt** | Correct identification (TP) | Incorrect callback (FP) |
+| **Judge said No** | Missed talent (FN) | Correct rejection (TN) |
 
-## Experience matters
+From these, we compute two measures:
 
-A judge who worked one panel and happened to vote for someone who advanced shouldn't outrank a veteran with hundreds of panels. Our ranking accounts for this:
+**Precision** — When this judge says "yes," how often are they right?
+```
+precision = correct identifications / all callbacks given
+```
+A judge who says "yes" to everyone would have low precision — most of their callbacks would go to dancers who never advance.
 
-- Judges with many panels are ranked on their actual track record
-- Judges with few panels get a lower ranking because we're less certain about them
-- To be ranked highly, you need both **good picks** and **enough data**
+**Recall** — Of all the dancers who did advance, how many did this judge catch?
+```
+recall = correct identifications / all advancers the judge saw
+```
+A judge who only says "yes" to one dancer per night might be very precise, but they'd miss most of the talent.
+
+**F1 score** — The harmonic mean of precision and recall, balancing both:
+```
+F1 = 2 × (precision × recall) / (precision + recall)
+```
+A perfect score of 1.0 means every "yes" goes to a future advancer and every future advancer gets a "yes." In practice, scores are much lower because judging is inherently uncertain.
+
+## Time weighting: sooner advancement counts more
+
+Not all correct calls are equal. Identifying someone who advances *next year* is more impressive than identifying someone who advances four years later (by then, lots of people could have spotted them).
+
+The time weight is:
+```
+time_weight = 1 / (years until advancement)
+```
+
+| Advances in... | Time weight |
+|----------------|-------------|
+| 1 year | 1.0 (full credit) |
+| 2 years | 0.5 (half credit) |
+| 3 years | 0.33 |
+| 4 years | 0.25 |
+
+The time-weighted F1 score uses these weights instead of treating all advancements equally. A judge who consistently spots dancers right before they level up scores higher than one who spots them years in advance.
+
+### Worked example
+
+**Judge A** evaluated 200 dancers in novice prelims:
+- Gave callbacks to 100 dancers
+- 40 of those 100 later advanced to intermediate
+- 60 of those 100 never advanced
+- Of the 100 dancers Judge A rejected, 15 later advanced
+
+Unweighted:
+```
+precision = 40 / 100 = 0.40
+recall    = 40 / (40 + 15) = 40 / 55 = 0.73
+F1        = 2 × 0.40 × 0.73 / (0.40 + 0.73) = 0.52
+```
+
+Now with time weighting — say of the 40 correct identifications:
+- 15 advanced in 1 year (weight 1.0 each = 15.0)
+- 12 advanced in 2 years (weight 0.5 each = 6.0)
+- 8 advanced in 3 years (weight 0.33 each = 2.64)
+- 5 advanced in 4+ years (weight 0.25 each = 1.25)
+- Total weighted TPs = 24.89
+
+And of the 15 missed advancers:
+- 5 advanced in 1 year (5.0), 10 later (3.5)
+- Total weighted FNs = 8.5
+
+```
+weighted_precision = 24.89 / 100 = 0.249
+weighted_recall    = 24.89 / (24.89 + 8.5) = 0.745
+weighted_F1        = 2 × 0.249 × 0.745 / (0.249 + 0.745) = 0.373
+```
+
+The weighted F1 is lower because many of the judge's correct calls took several years to pay off.
+
+## Confidence ranking: why experience matters
+
+A judge who worked one panel and got lucky shouldn't outrank a veteran with hundreds of panels. We handle this with a **Wilson lower bound confidence interval** — a statistical technique that accounts for sample size.
+
+The idea: given a judge's precision rate and number of evaluations, what's the *worst-case* precision we can be reasonably confident about?
+
+```
+Wilson lower bound = (center - margin) / denominator
+
+where:
+  center = precision + z² / (2 × evaluations)
+  margin = z × √(precision × (1 - precision) / evaluations + z² / (4 × evaluations²))
+  denominator = 1 + z² / evaluations
+  z = 1.645 (90% confidence level)
+```
+
+### What this does in practice
+
+| Judge | Precision | Evaluations | Wilson lower bound |
+|-------|-----------|-------------|-------------------|
+| Experienced judge | 60% | 500 | 55.6% |
+| Same precision, less data | 60% | 50 | 46.8% |
+| Same precision, tiny sample | 60% | 10 | 27.8% |
+| Very precise, huge sample | 45% | 1000 | 42.7% |
+
+The experienced judge with 500 evaluations and 60% precision gets a Wilson bound of 55.6% — close to their raw rate because we have lots of data. The judge with only 10 evaluations and the same 60% precision drops to 27.8% — we just don't have enough evidence to be confident.
+
+**The ranking uses the Wilson lower bound, not the raw precision.** This means top-ranked judges have both high quality *and* enough data to back it up.
+
+## Callback mark types
+
+Not all positive marks are equal. Judges can give:
+
+| Mark | Weight | Meaning |
+|------|--------|---------|
+| Y (Yes) | 1.0 | Definite callback |
+| A1 (1st Alternate) | 0.75 | First alternate |
+| A2 (2nd Alternate) | 0.50 | Second alternate |
+| A3 (3rd Alternate) | 0.25 | Third alternate |
+| N (No) | 0.0 | No callback |
+
+A separate "mark-weighted" F1 score uses these weights instead of treating all callbacks as equal. A judge who gives a full "Yes" to a future advancer gets more credit than one who gives an "A3."
+
+## Requirements
+
+- Judges need at least **50 evaluations** to appear in the rankings
+- Only prelim callbacks are evaluated (not finals scoring)
+- Skill levels tracked: Novice, Intermediate, and Advanced
 
 ## What this is NOT
 
 :::note
-This is not a "good judge" vs "bad judge" list. Judging WCS is complex and deeply subjective. This metric only measures one narrow dimension: how often a judge's prelim callbacks predict future advancement.
+This is not a "good judge" vs "bad judge" list. Judging WCS involves artistry, musicality, technique, connection, and many factors that can't be captured by a single number. This metric measures only one dimension: how often a judge's prelim callbacks predict future level advancement.
 :::
 
-- **Not about agreeing with other judges.** A judge who spots talent others miss would score *higher*, not lower.
-- **Not about finals scoring.** This only looks at prelim callbacks, where judges decide who advances through rounds.
-- **Not a complete measure of judging ability.** Judging involves artistry, musicality, technique, and many other factors that can't be captured in a single number.
+- **Not about agreeing with other judges.** A judge who spots talent others miss scores *higher*, not lower.
+- **Not about finals scoring.** We separately compute a finals rank correlation (Spearman's rho) measuring how closely a judge's finals placements match the consensus, but that's a different metric.
+- **Not a complete measure of judging ability.** A judge could have low talent-spotting scores but be an excellent finals judge, or vice versa.
 
-## Judge names
+## Judge name resolution
 
-The same judge might appear in results as "John Smith" at one event and "John S." or "Johnny Smith" at another. We resolve these into a single identity so their full body of work is counted together.
+The same judge might appear in results as "John Smith" at one event and "John S." or "Johnny Smith" at another. We run a 7-phase normalization process (case matching, first-name matching, last-initial matching, typo correction, word-overlap matching, nickname resolution, and manual overrides) to unify all variants into a single identity.

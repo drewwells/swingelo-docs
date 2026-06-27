@@ -1,47 +1,121 @@
 # Odds to Finals
 
-The odds calculation estimates your chances of making finals at each event. It looks at two things: how strong a competitor you are, and how hard it historically is to make finals at that specific event.
+The odds calculation estimates your chances of making finals at each event. It blends two signals: how dancers at your strength level have historically performed at that event, and how hard the event is overall.
 
-## The big picture
+## The formula
 
-Your odds at any event are a blend of two numbers:
+```
+adjusted_odds = calibrated_rate × weight + base_rate × (1 - weight)
+```
 
-1. **How dancers like you have done** — Among dancers with a similar [strength score](/scoring/strength) to yours, what percentage made finals at this event in past years?
-2. **How hard the event is overall** — Out of everyone who entered this event in past years, what percentage made finals?
+- **calibrated_rate** — Among dancers in your strength tier at this event, what percentage historically made finals?
+- **base_rate** — Out of everyone who entered this event, what percentage made finals?
+- **weight** — How much to trust your individual strength vs the overall average (varies by level)
 
-Your individual strength matters more at higher levels. At the champion level, it's almost entirely about how good you are. At the novice level, the historical average plays a bigger role because there's more variance in outcomes.
+## Step by step: a worked example
+
+Let's walk through a real calculation for an **intermediate follower** at an event with 50 entrants and typically 6 finalists.
+
+### Step 1: Compute strength percentile
+
+Your [strength score](/scoring/strength) is compared to every other dancer who has entered this event at your level and role in past years. You're ranked using a percentile:
+
+- 0.0 = weakest historical entrant
+- 0.50 = right in the middle
+- 1.0 = strongest historical entrant
+
+Say your strength score puts you at the **76th percentile** — stronger than 76% of historical intermediate followers at this event.
+
+### Step 2: Assign a strength tier
+
+Dancers are grouped into 10 tiers based on their percentile:
+
+| Tier | Percentile range | Meaning |
+|------|-----------------|---------|
+| Top 10% | 90th–100th | Strongest entrants |
+| 80–90% | 80th–90th | Very strong |
+| **70–80%** | **70th–80th** | **Strong (you're here at 76th)** |
+| 60–70% | 60th–70th | Above average |
+| 50–60% | 50th–60th | Middle of the pack |
+| 40–50% | 40th–50th | Below average |
+| 30–40% | 30th–40th | Weaker |
+| 20–30% | 20th–30th | Weak |
+| 10–20% | 10th–20th | Very weak |
+| Bottom 10% | 0–10th | Weakest entrants |
+
+At the 76th percentile, you land in the **70–80% tier**.
+
+### Step 3: Look up the calibrated rate
+
+For each tier, we know how often dancers in that tier have historically made finals at this level. This is computed across all events and years for your level and role:
+
+| Tier | Entrants seen | Made finals | Historical finals rate |
+|------|--------------|-------------|----------------------|
+| Top 10% | 245 | 189 | 77.1% |
+| 80–90% | 287 | 153 | 53.3% |
+| **70–80%** | **312** | **94** | **30.1%** |
+| 60–70% | 289 | 45 | 15.6% |
+| 50–60% | 301 | 28 | 9.3% |
+| ... | ... | ... | lower |
+
+Your tier's calibrated rate is **30.1%** — historically, 30.1% of intermediate followers in the 70–80th percentile made finals.
+
+### Step 4: Compute the base rate
+
+The base rate is the overall finals rate for this event, averaged across all years it's been held:
+
+```
+base_rate = average(finalists / entrants) across all years
+```
+
+For our example event: 6 finalists / 50 entrants = **12.0%** on average. Recent years (2024+) are weighted more heavily in case the event has grown or shrunk.
+
+### Step 5: Blend with the strength weight
+
+The strength weight for intermediate followers is **0.61** — meaning 61% of your odds come from your personal strength tier, and 39% from the event average.
+
+```
+adjusted_odds = 30.1% × 0.61 + 12.0% × 0.39
+             = 18.4% + 4.7%
+             = 23.1%
+```
+
+Your estimated chance of making finals at this event is **23.1%**.
 
 ## How much does your strength matter?
 
-| Level | Leaders | Followers |
-|-------|---------|-----------|
-| Newcomer | 53% you, 47% average | 40% you, 60% average |
-| Novice | 45% you, 55% average | 40% you, 60% average |
-| Intermediate | 53% you, 47% average | 61% you, 39% average |
-| Advanced | 76% you, 24% average | 93% you, 7% average |
-| All-Star | 64% you, 36% average | 84% you, 16% average |
-| Champion | 70% you, 30% average | 100% you |
+The strength weight varies by level and role. At higher levels, individual strength is a better predictor. At lower levels, there's more randomness.
 
-For a champion follower, your odds are 100% based on your strength — the general average doesn't factor in at all. For a novice leader, it's roughly half and half.
+| Level | Leaders | Followers | What this means |
+|-------|---------|-----------|----------------|
+| Newcomer | 53% | 40% | Roughly half strength, half average |
+| Novice | 45% | 40% | Similar — lots of variance at this level |
+| Intermediate | 53% | 61% | Strength starts to dominate for followers |
+| Advanced | 76% | 93% | Strength is the main predictor |
+| All-Star | 64% | 84% | Strong predictive power |
+| Champion | 70% | 100% | For champion followers, it's entirely about strength |
 
-## How "dancers like you" works
+At the champion follower level, the base rate is ignored completely — your odds are 100% determined by how you rank among historical competitors.
 
-We group all historical entrants into 10 tiers based on their strength score (top 10%, next 10%, and so on). Then we look at how often dancers in each tier actually made finals.
+## How these weights were chosen
 
-For example, if you're in the top 10% of strength at a given event and historically 65% of top-10% dancers made finals there, your "dancers like you" number is 65%.
+The weights aren't arbitrary. They were tuned using a technique called **Brier score minimization** — a standard method for calibrating probability predictions.
 
-## How "how hard the event is" works
+The process:
+1. Take all historical competition data and split it into training (pre-2024) and test (2024–2025) sets
+2. For each possible weight from 0.00 to 1.00 (in steps of 0.01), calculate what the predictions would have been
+3. Measure prediction accuracy: for each dancer, compare the predicted probability to what actually happened (1 = made finals, 0 = didn't)
+4. The **Brier score** is the average of (prediction - actual)² — lower is better
+5. Pick the weight that minimizes Brier score for each (level, role) combination
 
-This is straightforward: across all years the event has been held, what's the average ratio of finalists to total entrants?
+The result: these weights produce predictions that are 2.2% more accurate than using a uniform weight of 0.6 for everyone.
 
-An event with 50 entrants and 6 finalists has a 12% base rate. An event with 20 entrants and 6 finalists has a 30% base rate. Bigger events are harder to make finals at.
+## Edge cases
 
-Recent years count a bit more than older years, since field sizes and competitiveness change over time.
+**No calibration data available:** If there aren't enough historical entrants in your strength tier at a particular event, the calculation falls back to the event's base rate.
 
-## Event renames
+**New events:** For events with only 1–2 years of history, the base rate is noisier. The calculation still works but the predictions are less reliable.
 
-Events sometimes change names. "Novice Invitational" became "H-Town Throw Down." Your odds use data from all years under both names — the history carries over.
+**Event renames:** Events that changed names (like "Novice Invitational" → "H-Town Throw Down") are treated as the same event — all historical data from both names is combined.
 
-## Upcoming events
-
-Your odds page includes future events from the WSDC calendar, even if you haven't competed there yet. For those events, the calculation uses whatever historical data exists. If you've never competed at an event, your odds are based on the general average for that event rather than your personal history there.
+**Future events:** Your odds page includes upcoming events from the WSDC calendar. For events you've never competed at, the calculation uses whatever historical data exists for that event.
